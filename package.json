@@ -1,17 +1,32 @@
 {
-  "name": "linkedin-jobs-profile-matcher",
-  "version": "1.0.0",
-  "type": "module",
-  "scripts": {
-    "start": "node src/index.js"
-  },
-  "dependencies": {
-    "@ai-sdk/openai-compatible": "^0.0.18",
-    "ai": "^4.0.39",
-    "axios": "^1.6.2",
-    "cheerio": "^1.0.0-rc.12",
-    "dotenv": "^16.3.1",
-    "ollama-ai-provider": "^0.1.0",
-    "puppeteer": "^22.0.0"
-  }
+	"name": "linkedin-jobs-profile-matcher",
+	"version": "1.0.0",
+	"type": "module",
+	"scripts": {
+		"start": "node dist/index.js",
+		"build": "tsc",
+		"check": "biome check --write"
+	},
+	"dependencies": {
+		"@ai-sdk/google": "^1.0.17",
+		"@ai-sdk/openai-compatible": "^0.0.18",
+		"ai": "^4.0.39",
+		"axios": "^1.6.2",
+		"cheerio": "^1.0.0-rc.12",
+		"dotenv": "^16.3.1",
+		"ollama-ai-provider": "^0.1.0",
+		"puppeteer": "^22.0.0"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "1.9.4",
+		"@types/cheerio": "^0.22.35",
+		"@types/fs-extra": "^11.0.4",
+		"@types/node": "^22.10.7",
+		"@types/puppeteer": "^7.0.4",
+		"@typescript-eslint/eslint-plugin": "^8.20.0",
+		"@typescript-eslint/parser": "^8.20.0",
+		"eslint": "^9.18.0",
+		"ts-node": "^10.9.2",
+		"typescript": "^5.7.3"
+	}
 }

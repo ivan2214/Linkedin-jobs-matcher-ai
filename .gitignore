@@ -2,3 +2,6 @@ node_modules/
 .env
 JOB_ANALYSIS_REPORT.md
 *.log
+
+dist/
+build/

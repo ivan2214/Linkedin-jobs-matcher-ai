@@ -1,8 +1,11 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { userProfile } from "../profile.js";
+import type { JobResponseAI } from "./aiService.js";
 
-export async function generateJobReport(jobAnalyses) {
+export async function generateJobReport(
+	jobAnalyses: JobResponseAI[],
+): Promise<void> {
 	// Ordenar las ofertas por compatibilidad
 	jobAnalyses.sort((a, b) => b.match - a.match);
 
@@ -20,7 +23,7 @@ export async function generateJobReport(jobAnalyses) {
 
 	reportContent += "## 🔍 Criterios de Búsqueda\n\n";
 	reportContent += "- **Términos de búsqueda:** `[tu búsqueda aquí]`\n";
-	reportContent += `- **Ubicación:** \`${userProfile.location}\`\n\n`;
+	reportContent += `- **Ubicación:** \`${userProfile.educacion.institucion}\`\n\n`;
 
 	reportContent += "### ⚙️ Filtros Aplicados\n\n";
 	reportContent += "- ✅ Solo trabajos publicados en la última semana\n";
@@ -39,7 +42,7 @@ export async function generateJobReport(jobAnalyses) {
 		reportContent += "|---------|--------|-------|-----------|------|\n";
 
 		for (const job of jobAnalyses) {
-			reportContent += `| ${job.company} | ${job.title} | ${job.match}% | ${job.location} | [Ver oferta](${job.link}) |\n`;
+			reportContent += `| ${job.company} | ${job.title} | ${job.match}% | ${job.location} | [Ver oferta](${job.url}) |\n`;
 		}
 
 		reportContent += "\n## 📝 Detalles de las Ofertas\n\n";
@@ -49,12 +52,10 @@ export async function generateJobReport(jobAnalyses) {
 			reportContent += `**🏢 Empresa:** ${job.company}\n\n`;
 			reportContent += `**📍 Ubicación:** ${job.location}\n\n`;
 			reportContent += `**🎯 Coincidencia:** ${job.match}%\n\n`;
-			reportContent += `**🔗 [Ver oferta completa](${job.link})**\n\n`;
-			reportContent += "---\n\n";
+			reportContent += `**📄 Descripción:**\n\n\`\`\`\n${job.description}\n\`\`\`\n\n`;
 		});
 	}
 
-	await fs.writeFile(filename, reportContent, "utf-8");
-
-	console.log(`[+] Resultados guardados en: ${filename}`);
+	await fs.writeFile(filename, reportContent);
+	console.log(`Informe generado: ${filename}`);
 }
