@@ -1,7 +1,7 @@
 import { userProfile } from '../profile.js';
 
-export function generateSearchQueriesJobsSearched() {
-    const queries = [
+export function generateSearchQueriesJobsSearched(): string[] {
+    const queries: string[] = [
         "Frontend Developer",
         "React Developer",
         "JavaScript Developer",
@@ -24,7 +24,7 @@ export function generateSearchQueriesJobsSearched() {
     return [...new Set(queries)];
 }
 
-export function generateSearchQueriesPublished() {
+export function generateSearchQueriesPublished(): string[] {
     return [
         '(Frontend OR "Front End") AND (Developer OR Engineer) AND ("1-2 years" OR "hasta 2 años")',
         'Developer AND (Frontend OR "Front End") AND ("1 year" OR "2 years") AND (Remote OR Argentina)',

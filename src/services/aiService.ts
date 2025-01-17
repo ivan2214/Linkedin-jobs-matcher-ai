@@ -1,12 +1,25 @@
-import { generateText } from "ai";
-import { userProfile } from "../profile.js";
+import { generateText, LanguageModel } from "ai";
 
-export async function analyzeJobCompatibility(job, model) {
+import { userProfile } from "../profile.js";
+import { OpenAICompatibleProvider } from "@ai-sdk/openai-compatible";
+import { JobBrowser } from "./browserService.js";
+
+export interface JobResponseAI {
+  title: string;
+  company: string;
+  location: string;
+  description: string;
+  url: string;
+  match: number;
+}
+
+export async function analyzeJobCompatibility(model:LanguageModel, jobDescription: JobBrowser
+): Promise<JobResponseAI> {
   const prompt = `En base al siguiente perfil de desarrollador:
 ${JSON.stringify(userProfile, null, 2)}
 
 y a la siguiente oferta de trabajo:
-${JSON.stringify(job, null, 2)}
+${JSON.stringify(jobDescription, null, 2)}
 
 -Realizar un análisis detallado de la oferta de trabajo y determinar si el desarrollador se adecuaría a la oferta para que luego el desarrollador pueda aplicar.
 
@@ -27,11 +40,6 @@ ${JSON.stringify(job, null, 2)}
 -La respuesta debe tener el siguiente formato:
  Compatibilidad Total: [0-100]%
 
-## IMPORTANTE ##
--SOLO RESPONDER CON EL PORCENTAJE DE COMPATIBILIDAD TOTAL Y NINGÚN OTRO TEXTO ADICIONAL
--NO RESPONDER CON UNA RESPUESTA DE "SI" O "NO"
--RESPONDER CON EL PORCENTAJE DE COMPATIBILIDAD TOTAL
-
 -Ejemplo de respuesta:
 Compatibilidad Total: 80%
 `;
@@ -44,9 +52,9 @@ Compatibilidad Total: 80%
     const match = parseInt(
       text.match(/Compatibilidad Total: (\d+)%/)?.[1] || "0"
     );
-    return { ...job, match }; // Retornamos la oferta con el match incluido
+    return { ...jobDescription, match }; // Retornamos la oferta con el match incluido
   } catch (error) {
     console.error("Error en análisis:", error);
-    return "No se pudo realizar el análisis detallado.";
+    return { ...jobDescription, match: 0 };
   }
 }

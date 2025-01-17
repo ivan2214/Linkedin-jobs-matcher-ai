@@ -1,4 +1,25 @@
-export const userProfile = {
+interface Experience {
+  empresa: string;
+  puesto: string;
+  duracion: string;
+  tecnologias: string[];
+}
+
+interface Education {
+  titulo: string;
+  institucion: string;
+  graduacion: string;
+}
+
+interface UserProfile {
+  nombre: string;
+  titulo: string;
+  experiencia: Experience[];
+  educacion: Education;
+  habilidades: string[];
+}
+
+export const userProfile: UserProfile = {
   nombre: "Iván Bongiovanni",
   titulo: "Desarrollador de Software",
   experiencia: [
@@ -49,31 +70,29 @@ export const userProfile = {
     graduacion: "En curso",
   },
   habilidades: [
-    "Desarrollador Front End",
-    "React js",
-    "Next js",
-    "Astro",
     "JavaScript",
     "TypeScript",
-    "Tailwind CSS",
-    "Node.Js",
-    "PrismaORM",
-    "PostgreSQL",
-    "Docker",
-    "PHP",
+    "React",
+    "Redux",
+    "Node.js",
+    "Express",
+    "MongoDB",
+    "Git",
+    "GitHub",
+    "TailwindCSS",
+    "Metodologías Ágiles",
+    "Trabajo en equipo",
+    "Comunicación",
+    "Resolución de problemas",
+    "Aprendizaje rápido",
+    "Desarrollo web",
+    "Desarrollo Frontend",
+    "Desarrollo Full Stack",
+    "Diseño responsivo",
+    "Integración de APIs",
+    "Optimización de rendimiento",
+    "Control de versiones",
+    "Documentación de código",
+    "Depuración",
   ],
-  ubicacion: "Tucumán, Argentina",
-  nivelIngles: "A1",
-  expectativas: {
-    tipoTrabajo: ["Remoto", "Híbrido"],
-    salarioMinimo: 700000,
-    modalidad: [
-      "Tiempo Completo",
-      "Freelance",
-      "Proyecto",
-      "Part Time",
-      "Jornada Parcial",
-      "Jornada Completa",
-    ],
-  },
 };

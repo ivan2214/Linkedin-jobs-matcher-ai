@@ -1,8 +1,16 @@
-import puppeteer from "puppeteer";
+import puppeteer, { Browser, Page } from "puppeteer";
 import fs from "fs/promises";
 import path from "path";
 
-export async function initializeBrowser() {
+export interface JobBrowser {
+  title: string;
+  company: string;
+  location: string;
+  description: string;
+  url: string;
+}
+
+export async function initializeBrowser(): Promise<Browser> {
   return await puppeteer.launch({
     headless: false,
     args: [
@@ -14,13 +22,13 @@ export async function initializeBrowser() {
   });
 }
 
-export async function setupPage(page) {
+export async function setupPage(page: Page): Promise<void> {
   await page.evaluateOnNewDocument(() => {
     Object.defineProperty(navigator, "webdriver", { get: () => false });
   });
 }
 
-export async function loginToLinkedIn(page, email, password) {
+export async function loginToLinkedIn(page: Page, email: string, password: string): Promise<void> {
   const cookiesPath = path.join(process.cwd(), "cookies.json");
 
   try {
@@ -50,10 +58,10 @@ export async function loginToLinkedIn(page, email, password) {
   }
 }
 
-export async function extractJobDetails(page) {
+export async function extractJobDetails(page:Page): Promise<JobBrowser[]> {
   const jobs = await page.evaluate(() => {
     const jobCards = document.querySelectorAll(".job-card-container");
-    const jobData = [];
+    const jobData: JobBrowser[] = [];
 
     jobCards.forEach((card) => {
       const title =
@@ -69,9 +77,7 @@ export async function extractJobDetails(page) {
         card
           .querySelector(".job-card-container__metadata-wrapper li")
           ?.textContent?.trim() || "No disponible";
-      const isView = card.querySelector(
-        ".job-card-container__footer-job-state"?.textContent?.trim() || false
-      );
+      
 
       const description =
         card.querySelector(".jobs-description__content")?.textContent?.trim() ||
@@ -87,9 +93,9 @@ export async function extractJobDetails(page) {
         title,
         company,
         location,
-        isView,
+        
         description,
-        link: `${linkedinUrl}${link}`,
+        url: `${linkedinUrl}${link}`,
       });
     });
 
