@@ -1,25 +1,24 @@
-import { generateText, LanguageModel } from "ai";
+import { type LanguageModel, generateText } from "ai";
 
 import { userProfile } from "../profile.js";
-import { OpenAICompatibleProvider } from "@ai-sdk/openai-compatible";
-import { JobBrowser } from "./browserService.js";
+import type { JobBrowser } from "./browserService.js";
 
 export interface JobResponseAI {
-  title: string;
-  company: string;
-  location: string;
-  description: string;
-  url: string;
-  match: number;
+	title: string;
+	company: string;
+	location: string;
+	description: string;
+	url: string;
+	match: number;
 }
 
 export async function analyzeJobCompatibility(
-  model: LanguageModel,
-  linkedInJobs: JobBrowser[]
+	model: LanguageModel,
+	linkedInJobs: JobBrowser[],
 ): Promise<JobResponseAI[]> {
-  const jobsString = linkedInJobs
-    .map((job, index) => {
-      return `
+	const jobsString = linkedInJobs
+		.map((job, index) => {
+			return `
       Oferta ${index + 1}:
       Título: ${job.title}
       Empresa: ${job.company}
@@ -27,70 +26,73 @@ export async function analyzeJobCompatibility(
       Descripción: ${job.description}
       URL: ${job.url}
       `;
-    })
-    .join("\n");
+		})
+		.join("\n");
 
-    const prompt = `
-    # IMPORTANTE #
-    - RESPONDE SOLO EN FORMATO JSON COMO EL EJEMPLO
-    - NO EXPLIQUES NADA
-    - NO ANALICES DETALLADAMENTE
-    - SOLO RESPONDE EN EL SIGUIENTE FORMATO:
-    
-    { "Compatibilidad Total": 80%, "Oferta": 1 }
-    { "Compatibilidad Total": 75%, "Oferta": 2 }
-    { "Compatibilidad Total": 60%, "Oferta": 3 }
-    
-    # PERFIL DEL DESARROLLADOR #
-    ${JSON.stringify(userProfile, null, 2)}
-    
-    # OFERTAS DE TRABAJO #
-    ${jobsString}
-    
-    # FILTROS #
-    - Solo ofertas en español.
-    - Excluir trabajos con más de 2 años de experiencia, y en .NET, C++, C#, Java, Wordpress, React Native, Angular, Vue, Ruby.
-    - Solo devolver ofertas con más del 60% de compatibilidad.
-    
-    # RESPONDE SOLO EN EL FORMATO INDICADO #
-    `;
-    
+	const prompt = `
+		# IMPORTANTE #
+		- RESPONDE SOLO EN FORMATO JSON COMO EL EJEMPLO
+		- NO USES EL SÍMBOLO "%" EN LOS NÚMEROS
+		- NO EXPLIQUES NADA
+		- SOLO RESPONDE EN EL SIGUIENTE FORMATO:
+		
+		{ "Compatibilidad Total": 80, "Oferta": 1 }
+		{ "Compatibilidad Total": 75, "Oferta": 2 }
+		{ "Compatibilidad Total": 60, "Oferta": 3 }
+		
+		# PERFIL DEL DESARROLLADOR #
+		${JSON.stringify(userProfile, null, 2)}
+		
+		# OFERTAS DE TRABAJO #
+		${jobsString}
+		
+		# FILTROS #
+		- Solo ofertas en español.
+		- Excluir trabajos con más de 2 años de experiencia, y en .NET, C++, C#, Java, Wordpress, React Native, Angular, Vue, Ruby.
+		- Solo devolver ofertas con más del 60% de compatibilidad.
+		
+		# RESPONDE SOLO EN EL FORMATO INDICADO #
+		`;
 
-  try {
-    const { text } = await generateText({
-      model,
-      prompt,
-    });
+	try {
+		const { text } = await generateText({
+			model,
+			prompt,
+		});
 
+		console.log("Respuesta cruda de la IA:", text); // Agregado para depurar
 
+		const cleanText = text.replace(/%/g, ""); // Eliminar el símbolo %
+		console.log("Respuesta limpia:", cleanText);
 
-    // Parsear la respuesta de la IA en un formato adecuado
-    const matches = text
-    .split("\n")
-    .filter(line => line.trim().startsWith("{"))
-    .map(line => {
-      try {
-        const parsed = JSON.parse(line);
-        return parsed;
-      } catch (e) {
-        console.warn("Error al parsear línea:", line);
-        return null;
-      }
-    })
-    .filter(match => match && match["Compatibilidad Total"] > 60); // Filtrar compatibilidad > 60%
-  
-  const results = linkedInJobs.map((job, index) => {
-    const match = matches.find(m => m["Oferta"] === index + 1)?.["Compatibilidad Total"] || 0;
-    return { ...job, match };
-  });
-  
+		const matches = [...cleanText.matchAll(/\{[^}]+\}/g)]
+			.map((match) => {
+				try {
+					return JSON.parse(match[0]);
+				} catch (e) {
+					console.warn("Error al parsear JSON:", match[0]);
+					return null;
+				}
+			})
+			.filter((match) => match && match["Compatibilidad Total"] > 60);
 
-    console.log({results});
-    
+		const results = linkedInJobs
+			.map((job, index) => {
+				const match =
+					matches.find((m) => m.Oferta === index + 1)?.[
+						"Compatibilidad Total"
+					] || 0;
+				return { ...job, match };
+			})
+			.filter((job) => job.match > 60);
 
-    return results;
-  } catch (error) {
-    console.error("Error en análisis:", error);
-    return linkedInJobs.map(job => ({ ...job, match: 0 })).filter(job => job.match > 60); // Filtrar en caso de error
-  }
+		console.log({ results });
+
+		return results;
+	} catch (error) {
+		console.error("Error en análisis:", error);
+		return linkedInJobs
+			.map((job) => ({ ...job, match: 0 }))
+			.filter((job) => job.match > 60);
+	}
 }
