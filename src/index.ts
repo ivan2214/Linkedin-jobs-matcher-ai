@@ -1,6 +1,8 @@
 import dotenv from "dotenv";
 import { createOpenAICompatible, OpenAICompatibleProvider } from "@ai-sdk/openai-compatible";
 
+/* import { createGoogleGenerativeAI, google, GoogleGenerativeAIProvider } from '@ai-sdk/google'; */
+
 import { Browser, Page } from "puppeteer";
 
 import { generateSearchQueriesJobsSearched } from "./utils/searchQueries.js";
@@ -21,6 +23,7 @@ dotenv.config();
 
 class JobScraper {
   private lmstudio:OpenAICompatibleProvider<string, string, string> ;
+  /* private google: GoogleGenerativeAIProvider; */
 
   constructor() {
     this.lmstudio = createOpenAICompatible({
@@ -28,6 +31,10 @@ class JobScraper {
       baseURL: "http://localhost:1234/v1",
       
     });
+   /*  this.google = createGoogleGenerativeAI({
+      apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || '',
+      
+    }); */
   }
 
   async scrapeLinkedIn(): Promise<JobBrowser[]> {
@@ -90,27 +97,60 @@ class JobScraper {
 
     return uniqueJobs;
   }
+   // Spinner para mostrar carga
+   startLoadingSpinner(message: string): NodeJS.Timeout {
+    const spinnerChars = ['|', '/', '-', '\\'];
+    let index = 0;
+
+    return setInterval(() => {
+      process.stdout.write(`\r${message} ${spinnerChars[index++]}`);
+      index %= spinnerChars.length;
+    }, 100);
+  }
+
+  stopLoadingSpinner(spinner: NodeJS.Timeout, doneMessage: string) {
+    clearInterval(spinner);
+    process.stdout.write(`\r${doneMessage}\n`);
+  }
 
 
   async run(): Promise<void> {
     try {
       const linkedInJobs = await this.scrapeLinkedIn();
-      const jobAnalyses: JobResponseAI[]=[]
+      /* const model = google('gemini-1.5-pro-latest'); */
+      const model = this.lmstudio("llama-3.2-1b")
+      
+
+let jobAnalyses: JobResponseAI[] = [];
+      
+      
+        try {
+           // Iniciar spinner de carga
+        const spinner = this.startLoadingSpinner("🔍 Analizando compatibilidad de ofertas");
+          
+           jobAnalyses = await analyzeJobCompatibility(
+            model,
+            linkedInJobs,
+          );
+
+          // Detener spinner
+          this.stopLoadingSpinner(spinner, "✅ Análisis completado.");
+        } catch (error) {
+          console.error("❌ Error en el análisis de compatibilidad:", error);
+        }
+        
+      
+  
+        console.log(`📄 Total de ofertas encontradas: ${linkedInJobs.length}`);
+      console.log("----------------------------");
+      console.log(`📊 Total de ofertas compatibles: ${jobAnalyses.length}`);
 
       
-      for (const job of linkedInJobs) {
-        const analysis = await analyzeJobCompatibility(
-          this.lmstudio("llama-3.2-1b"),
-          job,
-        );
-        jobAnalyses.push(analysis);
-      }
-  
-      console.log(`Total de ofertas encontradas: ${linkedInJobs.length}`);
+      
       await generateJobReport(jobAnalyses);
       
     } catch (error) {
-      console.error("Error in job scraping process:", error);
+      console.error("❌ Error en el proceso de búsqueda de trabajos:", error);
     }
   }
 }

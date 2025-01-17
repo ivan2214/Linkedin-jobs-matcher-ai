@@ -13,48 +13,84 @@ export interface JobResponseAI {
   match: number;
 }
 
-export async function analyzeJobCompatibility(model:LanguageModel, jobDescription: JobBrowser
-): Promise<JobResponseAI> {
-  const prompt = `En base al siguiente perfil de desarrollador:
-${JSON.stringify(userProfile, null, 2)}
+export async function analyzeJobCompatibility(
+  model: LanguageModel,
+  linkedInJobs: JobBrowser[]
+): Promise<JobResponseAI[]> {
+  const jobsString = linkedInJobs
+    .map((job, index) => {
+      return `
+      Oferta ${index + 1}:
+      Título: ${job.title}
+      Empresa: ${job.company}
+      Ubicación: ${job.location}
+      Descripción: ${job.description}
+      URL: ${job.url}
+      `;
+    })
+    .join("\n");
 
-y a la siguiente oferta de trabajo:
-${JSON.stringify(jobDescription, null, 2)}
-
--Realizar un análisis detallado de la oferta de trabajo y determinar si el desarrollador se adecuaría a la oferta para que luego el desarrollador pueda aplicar.
-
--El analisis para que el desarrollador pueda aplicar debe tener en cuenta las siguientes aspectos:
-- Habilidades y competencias requeridas
-- Experiencia requerida
-- Nivel de inglés
-- Modalidad de trabajo
-- Salario
-- Ubicación
-- Tipo de trabajo
-
--La oferta puede no contener todas las características mencionadas anteriormente.
--El desarrollador puede no contener todas las características mencionadas anteriormente.
-
--Si la oferta esta en ingles revisar si el desarrollador tambien puede comunicarse en el nivel de ingles que la oferta requiere. De no serlo, responder con 0% de compatibilidad total y decir que se encuentra en ingles.
-
--La respuesta debe tener el siguiente formato:
- Compatibilidad Total: [0-100]%
-
--Ejemplo de respuesta:
-Compatibilidad Total: 80%
-`;
+    const prompt = `
+    # IMPORTANTE #
+    - RESPONDE SOLO EN FORMATO JSON COMO EL EJEMPLO
+    - NO EXPLIQUES NADA
+    - NO ANALICES DETALLADAMENTE
+    - SOLO RESPONDE EN EL SIGUIENTE FORMATO:
+    
+    { "Compatibilidad Total": 80%, "Oferta": 1 }
+    { "Compatibilidad Total": 75%, "Oferta": 2 }
+    { "Compatibilidad Total": 60%, "Oferta": 3 }
+    
+    # PERFIL DEL DESARROLLADOR #
+    ${JSON.stringify(userProfile, null, 2)}
+    
+    # OFERTAS DE TRABAJO #
+    ${jobsString}
+    
+    # FILTROS #
+    - Solo ofertas en español.
+    - Excluir trabajos con más de 2 años de experiencia, y en .NET, C++, C#, Java, Wordpress, React Native, Angular, Vue, Ruby.
+    - Solo devolver ofertas con más del 60% de compatibilidad.
+    
+    # RESPONDE SOLO EN EL FORMATO INDICADO #
+    `;
+    
 
   try {
     const { text } = await generateText({
       model,
       prompt,
     });
-    const match = parseInt(
-      text.match(/Compatibilidad Total: (\d+)%/)?.[1] || "0"
-    );
-    return { ...jobDescription, match }; // Retornamos la oferta con el match incluido
+
+
+
+    // Parsear la respuesta de la IA en un formato adecuado
+    const matches = text
+    .split("\n")
+    .filter(line => line.trim().startsWith("{"))
+    .map(line => {
+      try {
+        const parsed = JSON.parse(line);
+        return parsed;
+      } catch (e) {
+        console.warn("Error al parsear línea:", line);
+        return null;
+      }
+    })
+    .filter(match => match && match["Compatibilidad Total"] > 60); // Filtrar compatibilidad > 60%
+  
+  const results = linkedInJobs.map((job, index) => {
+    const match = matches.find(m => m["Oferta"] === index + 1)?.["Compatibilidad Total"] || 0;
+    return { ...job, match };
+  });
+  
+
+    console.log({results});
+    
+
+    return results;
   } catch (error) {
     console.error("Error en análisis:", error);
-    return { ...jobDescription, match: 0 };
+    return linkedInJobs.map(job => ({ ...job, match: 0 })).filter(job => job.match > 60); // Filtrar en caso de error
   }
 }
