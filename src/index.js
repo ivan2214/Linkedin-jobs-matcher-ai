@@ -19,7 +19,7 @@ class JobScraper {
     });
   }
 
-  generateSearchQueries() {
+  generateSearchQueriesPublished() {
     return [
       // Búsquedas originales con booleanos
 
@@ -49,6 +49,78 @@ class JobScraper {
       '(javascript OR react) AND developer AND remote AND ("1-2 years" OR "2 years max")',
       'Developer AND (Frontend OR "Front End") AND NOT (Senior OR "3+ years") AND (Remote OR Argentina)',
     ];
+  }
+
+  generateSearchQueriesJobsSearched() {
+    const queries = [
+      "Frontend Developer",
+      "React Developer",
+      "JavaScript Developer",
+      "TypeScript Developer",
+      "Full Stack Developer",
+      "Back End Developer",
+      "Node.js Developer",
+      "Express Developer",
+      "Laravel Developer",
+      "PHP Developer",
+      "Next.js Developer",
+      "Fullstack Developer",
+      "Full stack developer",
+      "Desarrollador Frontend",
+      "Desarrollador React",
+      "Desarrollador JavaScript",
+      "Desarrollador TypeScript",
+      "Desarrollador Full Stack",
+      "Desarrollador Back End",
+      "Desarrollador Node.js",
+      "Desarrollador Express",
+      "Desarrollador Laravel",
+      "Desarrollador PHP",
+      "Desarrollador Next.js",
+      "Desarrollador Fullstack",
+      "Desarrollador Full stack",
+      "Desarrollador de Frontend",
+      "Desarrollador de React",
+      "Desarrollador de JavaScript",
+      "Desarrollador de TypeScript",
+      "Desarrollador de Full Stack",
+      "Desarrollador de Back End",
+      "Desarrollador de Node.js",
+      "Desarrollador de Express",
+      "Front-end Developer",
+      "React.js Developer",
+      "JavaScript Developer",
+      "TypeScript Developer",
+      "Full Stack Developer",
+      "Back-end Developer",
+      "Node.js Developer",
+      "Express Developer",
+      "Laravel Developer",
+      "PHP Developer",
+      "Next.js Developer",
+      "Fullstack Developer",
+      "Full stack developer",
+      "Desarrollador Frontend",
+      "Junios de Frontend",
+      "React mid level Developer",
+      "JavaScript mid level Developer",
+      "TypeScript mid level Developer",
+      "Full Stack mid level Developer",
+      "Back-end mid level Developer",
+      "Node.js mid level Developer",
+      "Express mid level Developer",
+      "Laravel mid level Developer",
+      "PHP mid level Developer",
+      "Next.js mid level Developer",
+      "Fullstack mid level Developer",
+      "Full stack mid level developer",
+      "Desarrollador Frontend",
+      "Desarrollador React",
+      "Desarrollador JavaScript",
+    ];
+
+    // Eliminar duplicados utilizando un Set
+    return [...new Set(queries)];
   }
 
   async scrapeLinkedIn() {
@@ -103,12 +175,11 @@ class JobScraper {
         console.log("Cookies guardadas correctamente.");
       }
 
-      const searchQueries = this.generateSearchQueries();
+      const searchQueries = this.generateSearchQueriesJobsSearched();
       const shuflledQueries = searchQueries
         .sort(() => Math.random() - 0.5)
-        .slice(0, 8); // Seleccionar 3 queries aleatorias para aumentar la diversidad
+        .slice(0, 5);
       const allJobs = [];
-      let counter = 0;
 
       for (const query of shuflledQueries) {
         console.log(`Buscando trabajos con query: ${query}`);
@@ -128,32 +199,68 @@ class JobScraper {
 
         console.log("Búsqueda realizada y resultados cargados.");
 
-        const jobs = await page.evaluate(() => {
+        const jobs = await page.evaluate(async () => {
           const jobElements = document.querySelectorAll(
             "li[data-occludable-job-id]"
           );
+          const detailedJobs = [];
 
-          console.log(
-            `Encontrados ${jobElements.length} trabajos con esta query`
-          );
-
-          return Array.from(jobElements).map((el) => ({
-            title: el
+          for (let el of jobElements) {
+            const jobTitle = el
               .querySelector(".job-card-list__title a")
-              ?.textContent.trim(),
-            company: el
+              ?.textContent.trim();
+            const jobCompany = el
               .querySelector(".artdeco-entity-lockup__subtitle span")
-              ?.textContent.trim(),
-            location: el
+              ?.textContent.trim();
+            const jobLocation = el
               .querySelector(".job-card-container__metadata-wrapper li span")
-              ?.textContent.trim(),
-            url: el.querySelector(".job-card-list__title a")?.href,
-          }));
+              ?.textContent.trim();
+            const jobUrl = el.querySelector(".job-card-list__title a")?.href;
+
+            console.log(
+              `Encontrado trabajo: ${jobTitle} - ${jobCompany} - ${jobLocation} - ${jobUrl}`
+            );
+
+            // Hacer clic en el enlace del título para cargar el detalle
+            const link = el.querySelector(".job-card-list__title a");
+            if (link) {
+              await link.click();
+
+              // Esperar a que se carguen los detalles
+              await page.waitForSelector(".jobs-description__container", {
+                visible: true,
+              });
+
+              // Extraer los detalles de la página de trabajo
+              const jobDescription = await page.evaluate(() => {
+                const descriptionElement = document.querySelector(
+                  ".jobs-description__content .jobs-box__html-content"
+                );
+                return descriptionElement
+                  ? descriptionElement.textContent.trim()
+                  : "Descripción no disponible";
+              });
+
+              detailedJobs.push({
+                title: jobTitle,
+                company: jobCompany,
+                location: jobLocation,
+                url: jobUrl,
+                description: jobDescription,
+              });
+            }
+          }
+
+          return detailedJobs;
         });
 
         allJobs.push(...jobs);
         console.log(`Encontrados ${jobs.length} trabajos con esta query`);
       }
+
+      console.log({
+        allJobs,
+      });
 
       await browser.close();
       return this.removeDuplicateJobs(allJobs);
@@ -187,9 +294,9 @@ ${JSON.stringify(userProfile, null, 2)}
 y a la siguiente oferta de trabajo:
 ${JSON.stringify(job, null, 2)}
 
-Realizar un análisis detallado de la oferta de trabajo y determinar si el desarrollador se adecuaría a la oferta para que luego el desarrollador pueda aplicar.
+-Realizar un análisis detallado de la oferta de trabajo y determinar si el desarrollador se adecuaría a la oferta para que luego el desarrollador pueda aplicar.
 
-El análisis debe tener en cuenta las siguientes aspectos:
+-El analisis para que el desarrollador pueda aplicar debe tener en cuenta las siguientes aspectos:
 - Habilidades y competencias requeridas
 - Experiencia requerida
 - Nivel de inglés
@@ -198,24 +305,32 @@ El análisis debe tener en cuenta las siguientes aspectos:
 - Ubicación
 - Tipo de trabajo
 
-El análisis debe tener en cuenta las siguientes ponderaciones:
-- Habilidades y competencias: 0.4
-- Experiencia: 0.3
-- Nivel de inglés: 0.1
-- Modalidad de trabajo: 0.1
-- Salario: 0.1
-- Ubicación: 0.1
-- Tipo de trabajo: 0.1
+-La oferta puede no contener todas las características mencionadas anteriormente.
+-El desarrollador puede no contener todas las características mencionadas anteriormente.
 
-La respuesta debe tener el siguiente formato:
-Compatibilidad Total: [0-100]%
+-Si la oferta esta en ingles revisar si el desarrollador tambien puede comunicarse en el nivel de ingles que la oferta requiere. De no serlo, responder con 0% de compatibilidad total
+
+-La respuesta debe tener el siguiente formato:
+ Compatibilidad Total: [0-100]%
+
+## IMPORTANTE ##
+-SOLO RESPONDER CON EL PORCENTAJE DE COMPATIBILIDAD TOTAL Y NINGÚN OTRO TEXTO ADICIONAL
+-NO RESPONDER CON UNA RESPUESTA DE "SI" O "NO"
+-RESPONDER CON EL PORCENTAJE DE COMPATIBILIDAD TOTAL
+
+-Ejemplo de respuesta:
+Compatibilidad Total: 80%
+
 `;
     try {
       const { text } = await generateText({
         model,
         prompt,
       });
-      return text;
+      const match = parseInt(
+        text.match(/Compatibilidad Total: (\d+)%/)?.[1] || "0"
+      );
+      return { ...job, match }; // Retornamos la oferta con el match incluido
     } catch (error) {
       console.error("Error en análisis:", error);
       return "No se pudo realizar el análisis detallado.";
@@ -230,46 +345,64 @@ Compatibilidad Total: [0-100]%
       jobAnalyses.push({ ...job, analysis });
     }
 
-    // Ordenar por compatibilidad
-    jobAnalyses.sort((a, b) => {
-      const matchA = parseInt(
-        a.analysis.match(/Compatibilidad Total: (\d+)%/)?.[1] || "0"
-      );
-      const matchB = parseInt(
-        b.analysis.match(/Compatibilidad Total: (\d+)%/)?.[1] || "0"
-      );
-      return matchB - matchA;
-    });
+    // Ordenar las ofertas por compatibilidad
+    jobAnalyses.sort((a, b) => b.match - a.match);
 
-    const reportContent = jobAnalyses
-      .slice(0, 10)
-      .map(
-        (job) => `
-## ${job.title} - ${job.company}
+    // Crear el directorio de resultados si no existe
+    const resultsDir = "resultados_busqueda";
+    await fs.mkdir(resultsDir, { recursive: true });
 
-### Análisis de Compatibilidad
-${job.analysis}
+    // Generar nombre de archivo con fecha y hora
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-"); // Genera el formato con guiones
+    const filename = path.join(resultsDir, `README_${timestamp}.md`);
 
-[Ver Oferta](${job.url})
-    `
-      )
-      .join("\n\n");
+    // Escribir el archivo README
+    let reportContent = `# Búsqueda de Empleos LinkedIn 🚀\n\n`;
+    reportContent += `*Búsqueda realizada el ${new Date().toLocaleDateString()} a las ${new Date().toLocaleTimeString()}*\n\n`;
 
-    await fs.writeFile(
-      path.join(process.cwd(), "JOB_ANALYSIS_REPORT.md"),
-      `# Análisis de Ofertas de Trabajo
+    reportContent += "## 🔍 Criterios de Búsqueda\n\n";
+    reportContent += `- **Términos de búsqueda:** \`[tu búsqueda aquí]\`\n`;
+    reportContent += `- **Ubicación:** \`${userProfile.location}\`\n\n`;
 
-## Mejores Ofertas para ${userProfile.nombre}
+    reportContent += "### ⚙️ Filtros Aplicados\n\n";
+    reportContent += "- ✅ Solo trabajos publicados en la última semana\n";
+    reportContent += "- 🗣️ Solo ofertas en español\n";
+    reportContent +=
+      "- 🚫 Excluidos: Trabajos con más de 2 años de experiencia, trabajos en .NET, C++, o C#\n\n";
 
-${reportContent}
+    if (jobAnalyses.length === 0) {
+      reportContent += "## ❌ No se encontraron ofertas\n\n";
+      reportContent +=
+        "No se encontraron ofertas de trabajo que coincidan con los criterios especificados.\n";
+    } else {
+      reportContent += `## 📊 Resultados (${jobAnalyses.length} ofertas encontradas)\n\n`;
 
-*Informe generado automáticamente*`
-    );
+      reportContent += "| Empresa | Puesto | Match | Ubicación | Link |\n";
+      reportContent += "|---------|--------|-------|-----------|------|\n";
+
+      jobAnalyses.forEach((job) => {
+        reportContent += `| ${job.company} | ${job.title} | ${job.match}% | ${job.location} | [Ver oferta](${job.url}) |\n`;
+      });
+
+      reportContent += "\n## 📝 Detalles de las Ofertas\n\n";
+
+      jobAnalyses.forEach((job, idx) => {
+        reportContent += `### ${idx + 1}. ${job.title}\n\n`;
+        reportContent += `**🏢 Empresa:** ${job.company}\n\n`;
+        reportContent += `**📍 Ubicación:** ${job.location}\n\n`;
+        reportContent += `**🎯 Coincidencia:** ${job.match}%\n\n`;
+        reportContent += `**🔗 [Ver oferta completa](${job.url})**\n\n`;
+        reportContent += "---\n\n";
+      });
+    }
+
+    await fs.writeFile(filename, reportContent, "utf-8");
+
+    console.log(`[+] Resultados guardados en: ${filename}`);
   }
 
   async run() {
     const linkedInJobs = await this.scrapeLinkedIn();
-
     console.log(`Total de ofertas encontradas: ${linkedInJobs.length}`);
     await this.generateJobReport(linkedInJobs);
   }
