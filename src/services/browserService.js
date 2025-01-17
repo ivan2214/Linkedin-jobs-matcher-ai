@@ -49,3 +49,52 @@ export async function loginToLinkedIn(page, email, password) {
     console.log("Cookies guardadas correctamente.");
   }
 }
+
+export async function extractJobDetails(page) {
+  const jobs = await page.evaluate(() => {
+    const jobCards = document.querySelectorAll(".job-card-container");
+    const jobData = [];
+
+    jobCards.forEach((card) => {
+      const title =
+        card
+          .querySelector(".job-card-container__link span strong")
+          ?.textContent?.trim() || "No disponible";
+
+      const company =
+        card
+          .querySelector(".artdeco-entity-lockup__subtitle")
+          ?.textContent?.trim() || "No disponible";
+      const location =
+        card
+          .querySelector(".job-card-container__metadata-wrapper li")
+          ?.textContent?.trim() || "No disponible";
+      const isView = card.querySelector(
+        ".job-card-container__footer-job-state"?.textContent?.trim() || false
+      );
+
+      const description =
+        card.querySelector(".jobs-description__content")?.textContent?.trim() ||
+        "No disponible";
+
+      const linkedinUrl = "https://www.linkedin.com";
+
+      const link = card
+        .querySelector(".job-card-container__link")
+        ?.getAttribute("href");
+
+      jobData.push({
+        title,
+        company,
+        location,
+        isView,
+        description,
+        link: `${linkedinUrl}${link}`,
+      });
+    });
+
+    return jobData;
+  });
+
+  return jobs;
+}
